@@ -8,8 +8,8 @@ from app.utils import generate_s3_download_url, download_file, upload_file_to_s3
 from settings.config import settings
 
 
-async def convert_file(s3_key: str, format_to: str) -> dict:
-    converted_s3_key = s3_key.replace(".docx", f".{format_to}")
+async def convert_file(s3_key: str, old_format, format_to: str) -> dict:
+    converted_s3_key = s3_key.replace(f".{old_format}", f".{format_to}")
     bucket = settings.AWS_S3_BUCKET_NAME
     download_url = generate_s3_download_url(s3_key)
 

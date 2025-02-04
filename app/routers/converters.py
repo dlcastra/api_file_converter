@@ -17,7 +17,7 @@ class RequestS3Key(BaseModel):
 
 @router.post("/from-docx-to-pdf")
 async def convert_from_docx_to_pdf(request: RequestS3Key):
-    return await convert_file(request.s3_key, "pdf")
+    return await convert_file(request.s3_key, "docx", "pdf")
 
 
 @router.post("/from-pdf-to-docx")
@@ -46,9 +46,9 @@ async def convert_from_pdf_to_docx(request: RequestS3Key):
 
 @router.post("/from-txt-to-docx")
 async def convert_from_txt_to_docx(request: RequestS3Key):
-    return await convert_file(request.s3_key, "docx")
+    return await convert_file(request.s3_key, "txt", "docx")
 
 
 @router.post("/from-txt-to-pdf")
 async def convert_from_txt_to_pdf(request: RequestS3Key):
-    return await convert_file(request.s3_key, "pdf")
+    return await convert_file(request.s3_key, "txt", "pdf")

@@ -1,38 +1,58 @@
+import asyncio
 import os
 import subprocess
 import tempfile
+import time
+from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import HTTPException
 
 from app.utils import generate_s3_download_url, download_file, upload_file_to_s3
-from settings.config import settings
+from settings.config import settings, logger
+
+executor = ThreadPoolExecutor()
 
 
 async def convert_file(s3_key: str, old_format, format_to: str) -> dict:
     converted_s3_key = s3_key.replace(f".{old_format}", f".{format_to}")
     bucket = settings.AWS_S3_BUCKET_NAME
+
+    logger.info("Generating download url")
     download_url = generate_s3_download_url(s3_key)
+    logger.info("Download url has been generated")
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        input_path = os.path.join(tmpdir, s3_key)
-        output_path = os.path.join(tmpdir, converted_s3_key)
+        input_path = f"{tmpdir}/{s3_key}"
+        output_path = f"{tmpdir}/{converted_s3_key}"
 
+        logger.info("Started downloading file")
         download_file(input_path, download_url)
-        convert_with_libreoffice(format_to, tmpdir, input_path, output_path, bucket, converted_s3_key)
+        logger.info("File has been downloaded")
+        logger.info("Started converting file")
+
+        await convert_with_libreoffice(format_to, tmpdir, input_path, output_path, bucket, converted_s3_key)
+        logger.info("Converted successfully")
 
         file_url = f"https://{bucket}.s3.{settings.AWS_S3_REGION}.amazonaws.com/{converted_s3_key}"
         return {"file_url": file_url, "new_s3_key": converted_s3_key}
 
 
-def convert_with_libreoffice(format_to, tempdir, input_path, output_path, bucket, new_name):
-    libreoffice_subprocess(format_to, tempdir, input_path),
+async def convert_with_libreoffice(format_to, tempdir, input_path, output_path, bucket, new_name):
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(executor, libreoffice_subprocess, format_to, tempdir, input_path)
+    logger.info("File has been converted")
+    logger.info("Started uploading file")
     upload_file_to_s3(output_path, bucket, new_name)
 
 
-def libreoffice_subprocess(format_to, tempdir, input_path):
+def libreoffice_subprocess(format_to, output_path):
     try:
-        subprocess.run(
-            ["libreoffice", "--headless", "--convert-to", format_to, "--outdir", tempdir, input_path], check=True
-        )
+        logger.info("Starting libreoffice subprocess")
+        subprocess.run(["unoconv", "-f", format_to, output_path], check=True)
+
+        logger.info("Subprocess finished")
     except subprocess.CalledProcessError:
         raise HTTPException(status_code=500, detail="File conversion error")
+    except Exception as e:
+        logger.error(f"Error during file conversion: {e}")
+        raise HTTPException(status_code=500, detail="Unknown conversion error")

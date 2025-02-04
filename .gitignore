@@ -162,3 +162,5 @@ cython_debug/
 # Certificates
 cert.crt
 cert.key
+
+supervisord.pid

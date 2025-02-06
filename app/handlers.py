@@ -1,8 +1,6 @@
 import asyncio
-import os
 import subprocess
 import tempfile
-import time
 from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import HTTPException
@@ -13,7 +11,7 @@ from settings.config import settings, logger
 executor = ThreadPoolExecutor()
 
 
-async def convert_file(s3_key: str, old_format, format_to: str) -> dict:
+async def convert_file(s3_key: str, old_format: str, format_to: str) -> dict:
     converted_s3_key = s3_key.replace(f".{old_format}", f".{format_to}")
     bucket = settings.AWS_S3_BUCKET_NAME
 
@@ -30,16 +28,16 @@ async def convert_file(s3_key: str, old_format, format_to: str) -> dict:
         logger.info("File has been downloaded")
         logger.info("Started converting file")
 
-        await convert_with_libreoffice(format_to, tmpdir, input_path, output_path, bucket, converted_s3_key)
+        await convert_with_libreoffice(format_to, input_path, output_path, bucket, converted_s3_key)
         logger.info("Converted successfully")
 
         file_url = f"https://{bucket}.s3.{settings.AWS_S3_REGION}.amazonaws.com/{converted_s3_key}"
         return {"file_url": file_url, "new_s3_key": converted_s3_key}
 
 
-async def convert_with_libreoffice(format_to, tempdir, input_path, output_path, bucket, new_name):
+async def convert_with_libreoffice(format_to, input_path, output_path, bucket, new_name):
     loop = asyncio.get_event_loop()
-    await loop.run_in_executor(executor, libreoffice_subprocess, format_to, tempdir, input_path)
+    await loop.run_in_executor(executor, libreoffice_subprocess, format_to, input_path)
     logger.info("File has been converted")
     logger.info("Started uploading file")
     upload_file_to_s3(output_path, bucket, new_name)

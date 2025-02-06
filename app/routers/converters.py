@@ -13,11 +13,14 @@ router = APIRouter()
 
 class RequestS3Key(BaseModel):
     s3_key: str
+    format_from: str
+    format_to: str
 
 
-@router.post("/from-docx-to-pdf")
+@router.post("/convert-file")
 async def convert_from_docx_to_pdf(request: RequestS3Key):
-    return await convert_file(request.s3_key, "docx", "pdf")
+    print(request.s3_key, request.format_from, request.format_to)
+    return await convert_file(request.s3_key, request.format_from, request.format_to)
 
 
 @router.post("/from-pdf-to-docx")
@@ -42,13 +45,3 @@ async def convert_from_pdf_to_docx(request: RequestS3Key):
 
         file_url = f"https://{settings.AWS_S3_BUCKET_NAME}.s3.{settings.AWS_S3_REGION}.amazonaws.com/{output_s3_key}"
         return {"file_url": file_url, "new_s3_key": converted_s3_key}
-
-
-@router.post("/from-txt-to-docx")
-async def convert_from_txt_to_docx(request: RequestS3Key):
-    return await convert_file(request.s3_key, "txt", "docx")
-
-
-@router.post("/from-txt-to-pdf")
-async def convert_from_txt_to_pdf(request: RequestS3Key):
-    return await convert_file(request.s3_key, "txt", "pdf")

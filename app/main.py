@@ -7,7 +7,7 @@ from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
 from app.routers import converters
 
 app = FastAPI()
-app.include_router(converters.router, prefix="/convert", tags=["Converters"])
+app.include_router(converters.router, prefix="/converter", tags=["Converters"])
 
 
 @app.exception_handler(RequestValidationError)

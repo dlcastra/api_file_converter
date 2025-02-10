@@ -42,6 +42,7 @@ def download_file(input_path: str, presigned_url: str):
 
 def upload_file_to_s3(file_path: str, bucket_name: str, key: str):
     try:
+        logger.info("Started uploading file")
         s3_client.upload_file(file_path, bucket_name, key)
         logger.info("File has been uploaded to AWS S3")
         return "Successfully uploaded", True

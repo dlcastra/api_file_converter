@@ -56,11 +56,6 @@ async def callback(callback_url, status, data):
     async with httpx.AsyncClient() as client:
         try:
             data["status"] = status
-            if status == Status.SUCCESS.value:
-                response = await client.post(callback_url, json=data)
-                response.raise_for_status()
-                return {"status": status}
-
             response = await client.post(callback_url, json=data)
             response.raise_for_status()
             return {"status": status}

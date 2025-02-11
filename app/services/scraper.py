@@ -1,6 +1,7 @@
 import asyncio
 import re
 import tempfile
+from collections import defaultdict
 
 import aiofiles
 import fitz
@@ -22,12 +23,16 @@ class FileScraperService:
             message, is_downloaded = download_file(file_path, download_url)
             if not is_downloaded:
                 return message, None
-            if file_path.endswith(".txt"):
-                return await self.extract_text_from_txt(file_path), True
-            elif file_path.endswith(".docx"):
-                return await self.extract_text_from_docx(file_path), True
-            elif file_path.endswith(".pdf"):
-                return await self.extract_text_from_pdf(file_path), True
+
+            try:
+                if file_path.endswith(".txt"):
+                    return await self.extract_text_from_txt(file_path), True
+                elif file_path.endswith(".docx"):
+                    return await self.extract_text_from_docx(file_path), True
+                elif file_path.endswith(".pdf"):
+                    return await self.extract_text_from_pdf(file_path), True
+            except Exception as e:
+                return str(e), None
 
             return "Unsupported file type", None
 
@@ -66,14 +71,21 @@ class FileScraperService:
 
     def find_sentences_with_fuzzy_keywords(self, text, threshold=80):
         keywords = [kw.lower() for kw in self.keywords]
-        sentences = re.split(r"(?<=[.!?])\s+", text)
-        found_sentences = []
+        clean_text = re.sub(r"\s*\n\s*", " ", text)
+        sentences = re.split(r"(?<=[.!?])\s+", clean_text)
+
+        sentence_scores = defaultdict(int)
 
         for sentence in sentences:
             words = sentence.lower().split()
-            for keyword in keywords:
-                if any(fuzz.ratio(word, keyword) >= threshold for word in words):
-                    found_sentences.append(sentence)
-                    break
+            match_count = sum(any(fuzz.ratio(word, keyword) >= threshold for word in words) for keyword in keywords)
 
-        return found_sentences
+            if match_count > 0:
+                sentence_scores[sentence] = match_count
+
+        if not sentence_scores:
+            return []
+
+        max_matches = max(sentence_scores.values())
+
+        return [sent for sent, count in sentence_scores.items() if count == max_matches]

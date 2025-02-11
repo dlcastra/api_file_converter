@@ -36,4 +36,4 @@ async def file_scraper(s3_key: str, keywords: list[str]):
     if not is_processed:
         return Status.ERROR.value, details
 
-    return Status.SUCCESS.value, details
+    return Status.SUCCESS.value, {"count": len(details), "sentences": details}

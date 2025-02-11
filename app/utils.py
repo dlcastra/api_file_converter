@@ -4,7 +4,6 @@ from pdf2docx import Converter
 
 from settings.aws_config import s3_client
 from settings.config import settings, logger
-from app.models.statuses import Status
 
 
 def convert_pdf_to_docx(pdf_path: str, docx_path: str):

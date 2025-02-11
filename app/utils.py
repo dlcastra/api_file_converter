@@ -4,7 +4,6 @@ from pdf2docx import Converter
 
 from settings.aws_config import s3_client
 from settings.config import settings, logger
-from app.models.statuses import Status
 
 
 def convert_pdf_to_docx(pdf_path: str, docx_path: str):
@@ -56,11 +55,6 @@ async def callback(callback_url, status, data):
     async with httpx.AsyncClient() as client:
         try:
             data["status"] = status
-            if status == Status.SUCCESS.value:
-                response = await client.post(callback_url, json=data)
-                response.raise_for_status()
-                return {"status": status}
-
             response = await client.post(callback_url, json=data)
             response.raise_for_status()
             return {"status": status}

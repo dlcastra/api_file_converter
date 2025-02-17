@@ -28,16 +28,27 @@ class FileConverterService:
 
     async def convert_with_libreoffice(self, format_to, output_path, input_path):
         try:
-            process = await asyncio.create_subprocess_exec(
-                "unoconv",
-                "-f",
-                format_to,
-                "-o",
-                output_path,
-                input_path,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
+            if input_path.endswith(".pdf"):
+                process = await asyncio.create_subprocess_exec(
+                    "./pdf2smth",
+                    format_to,
+                    input_path,
+                    output_path,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+            else:
+
+                process = await asyncio.create_subprocess_exec(
+                    "unoconv",
+                    "-f",
+                    format_to,
+                    "-o",
+                    output_path,
+                    input_path,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
 
             stdout, stderr = await process.communicate()
 

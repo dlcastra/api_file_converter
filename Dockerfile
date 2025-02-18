@@ -14,8 +14,7 @@ RUN apt-get update \
         supervisor \
         unoconv \
         net-tools \
-        g++ mono-mcs \
-        make \
+        g++ make \
         libpoppler-cpp-dev \
         libopencv-dev \
         imagemagick \
@@ -23,8 +22,8 @@ RUN apt-get update \
         libmagickcore-dev \
         libmagick++-dev \
         pkg-config \
+        -y ghostscript\
     && rm -rf /var/lib/apt/lists/*
-
 ENV UNO_PATH="/usr/lib/libreoffice/program"
 ENV PYTHONPATH="/usr/lib/python3/dist-packages"
 

@@ -30,7 +30,7 @@ class FileConverterService:
         try:
             if input_path.endswith(".pdf"):
                 process = await asyncio.create_subprocess_exec(
-                    "./pdf2smth",
+                    "pdf2smth",
                     format_to,
                     input_path,
                     output_path,

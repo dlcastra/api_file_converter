@@ -14,7 +14,7 @@ RUN apt-get update \
         supervisor \
         unoconv \
         net-tools \
-        g++ \
+        g++ mono-mcs \
         make \
         libpoppler-cpp-dev \
         libopencv-dev \
@@ -37,13 +37,14 @@ RUN mkdir -p uploads converted && chown -R admin:admin /usr/src/service
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY policy.xml etc/ImageMagick-6/policy.xml
+
 # Copy the cpp source code and other necessary files
 COPY . .
 
-# Compile the C++ file (convert_pdf.cpp)
-# Створення директорії перед компіляцією
-RUN mkdir -p /usr/src/app/services \
-    && g++ convert_pdf.cpp -o /usr/src/app/services/pdf2smth \
+RUN mkdir -p /usr/src/service/app/services && chmod 777 /usr/src/service/app/services
+
+RUN g++ convert_pdf.cpp -o pdf2smth \
     $(pkg-config --cflags --libs Magick++) \
     -I/usr/include/poppler/cpp \
     -I/usr/include/opencv4 \
@@ -51,6 +52,9 @@ RUN mkdir -p /usr/src/app/services \
     -lpoppler-cpp \
     -std=c++11
 
+RUN ls -l /usr/src/service
+
+RUN mv pdf2smth /usr/bin/ && chmod +x /usr/bin/pdf2smth
 
 
 

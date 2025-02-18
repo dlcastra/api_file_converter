@@ -37,7 +37,7 @@ RUN mkdir -p uploads converted && chown -R admin:admin /usr/src/service
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY policy.xml etc/ImageMagick-6/policy.xml
+COPY policy.xml /etc/ImageMagick-6/policy.xml
 
 # Copy the cpp source code and other necessary files
 COPY . .

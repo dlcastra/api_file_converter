@@ -1,4 +1,4 @@
-from typing import TypeAlias, Tuple, Union
+from typing import TypeAlias, Tuple
 
 ConverterService: TypeAlias = Tuple[str, bool]
-ConverterHandler = Union[Tuple[str, str], Tuple[str, dict]]
+ConverterHandler = Tuple[str, dict[str, str]]

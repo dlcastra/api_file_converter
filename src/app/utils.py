@@ -101,6 +101,7 @@ async def upload_file_to_s3(file_path: str, bucket_name: str, key: str) -> objec
     :return: A tuple (`str`, `True`) if the file is uploaded successfully.
              A tuple (`str`, `False`) with an error message if the file is not uploaded.
     """
+
     loop = asyncio.get_event_loop()
     with futures.ProcessPoolExecutor() as pool:
         result = await loop.run_in_executor(pool, sync_upload_file, file_path, bucket_name, key)
@@ -120,6 +121,7 @@ async def callback(callback_url: str, status: str, data: dict) -> dict:
     :return: **A dict with the status of the process.**
              Statuses: success, processing, waiting, error etc.
     """
+
     async with httpx.AsyncClient() as client:
         try:
             data["status"] = status

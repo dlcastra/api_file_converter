@@ -17,6 +17,7 @@ async def convert_file(s3_key: str, old_format: str, format_to: str) -> Converte
     :param format_to: format to convert the file - **str**.
     :return: tuple with the status and the data. **status - str, data - str or dict**.
     """
+
     converter = FileConverterService()
     bucket = settings.AWS_S3_BUCKET_NAME
     region = settings.AWS_S3_REGION
@@ -50,6 +51,7 @@ async def file_scraper(s3_key: str, keywords: list[str]) -> ScraperHandler:
     :param keywords: list of keywords to search in the file - **list[str]***.
     :return: tuple with the status and the data. ***status - str, data - str or dict**.
     """
+
     scraper = FileScraperService()
     bucket = settings.AWS_S3_BUCKET_NAME
 

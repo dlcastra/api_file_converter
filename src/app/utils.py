@@ -7,7 +7,7 @@ from botocore.exceptions import ClientError
 from pdf2docx import Converter
 
 from src.app.typing.common import TupleStrBool
-from src.settings.aws_config import s3_client
+from src.app.aws.clients import s3_client
 from src.settings.config import logger
 
 

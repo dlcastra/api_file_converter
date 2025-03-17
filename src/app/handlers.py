@@ -1,6 +1,5 @@
 from src.app.models.statuses import Status
-from src.app.services.converter import FileConverterService
-from src.app.services.scraper import FileScraperService
+from src.app.services import get_file_scraper_service, get_file_converter_service
 from src.app.typing.converter import ConverterHandler
 from src.app.typing.scraper import ScraperHandler
 from src.settings.config import settings, logger
@@ -18,7 +17,7 @@ async def convert_file(s3_key: str, old_format: str, format_to: str) -> Converte
     :return: tuple with the status and the data. **status - str, data - str or dict**.
     """
 
-    converter = FileConverterService()
+    converter = get_file_converter_service()
     bucket = settings.AWS_S3_BUCKET_NAME
     region = settings.AWS_S3_REGION
 
@@ -52,7 +51,7 @@ async def file_scraper(s3_key: str, keywords: list[str]) -> ScraperHandler:
     :return: tuple with the status and the data. ***status - str, data - str or dict**.
     """
 
-    scraper = FileScraperService()
+    scraper = get_file_scraper_service()
     bucket = settings.AWS_S3_BUCKET_NAME
 
     try:

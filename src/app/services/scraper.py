@@ -10,7 +10,7 @@ from docx import Document
 from rapidfuzz import fuzz
 
 from src.app.typing.scraper import ScraperService, EmptyListOrListStr
-from src.app.utils import download_file
+from src.app.aws.utils import download_file
 from src.settings.config import logger
 
 

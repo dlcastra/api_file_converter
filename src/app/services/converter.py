@@ -32,7 +32,7 @@ class FileConverterService:
             logger.error(f"Internal error: {str(e)}")
             return None, False
 
-    async def _convert_file(self, format_from: str, format_to: str, file_bytes: BytesIO) -> tuple[BytesIO | str, bool]:
+    async def _convert_file(self, format_from: str, format_to: str, file_bytes: BytesIO) -> Tuple[BytesIO | str, bool]:
         try:
             is_from_pdf_or_image = format_from == "pdf" or format_from in ALLOWED_IMAGES_TYPES
             is_to_image = format_to in ALLOWED_IMAGES_TYPES
@@ -47,7 +47,7 @@ class FileConverterService:
             logger.error(f"Conversion error: {e}")
             return str(e), False
 
-    async def _convert_with_libreoffice(self, file_bytes: BytesIO, format_to: str) -> tuple[BytesIO | str, bool]:
+    async def _convert_with_libreoffice(self, file_bytes: BytesIO, format_to: str) -> Tuple[BytesIO | str, bool]:
         """
         Convert a file using LibreOffice using RAM storage and parallel execution.
 
@@ -90,7 +90,7 @@ class FileConverterService:
             logger.error(f"Error during conversion: {e}")
             return str(e), False
 
-    async def _pdf_converter(self, file_bytes: BytesIO, format_to: str) -> tuple[BytesIO, bool]:
+    async def _pdf_converter(self, file_bytes: BytesIO, format_to: str) -> Tuple[BytesIO, bool]:
         loop = asyncio.get_running_loop()
         with ThreadPoolExecutor() as executor:
             if format_to == "docx":
@@ -103,7 +103,7 @@ class FileConverterService:
             else:
                 return BytesIO(), False
 
-    def _convert_pdf_to_docx(self, file_bytes: BytesIO) -> tuple[BytesIO, bool]:
+    def _convert_pdf_to_docx(self, file_bytes: BytesIO) -> Tuple[BytesIO, bool]:
         output_stream = BytesIO()
         cv = Converter(stream=file_bytes.getvalue())
 
@@ -117,7 +117,7 @@ class FileConverterService:
             cv.close()
             return BytesIO(), False
 
-    def _convert_pdf_to_txt(self, file_bytes) -> tuple[BytesIO, bool]:
+    def _convert_pdf_to_txt(self, file_bytes) -> Tuple[BytesIO, bool]:
         doc = fitz.open("pdf", file_bytes.read())
         text = "\n".join([page.get_text() for page in doc])
 

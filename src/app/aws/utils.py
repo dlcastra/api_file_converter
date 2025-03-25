@@ -2,7 +2,7 @@ import asyncio
 import os
 from concurrent import futures
 from io import BytesIO
-from typing import Tuple, Optional
+from typing import Tuple, Union
 
 from botocore.exceptions import BotoCoreError, ClientError
 
@@ -11,7 +11,7 @@ from src.settings.config import logger
 from src.app.constants import CONTENT_TYPES
 
 
-def sync_download_file_as_bytes(bucket: str, s3_key: str) -> Tuple[Optional[BytesIO, None], bool]:
+def sync_download_file_as_bytes(bucket: str, s3_key: str) -> Tuple[Union[BytesIO, None], bool]:
     """
     Downloads a file from S3 and returns it as BytesIO object.
 
@@ -110,7 +110,7 @@ def sync_upload_file(file_path: str, bucket_name: str, key: str) -> Tuple[str, b
         return str(e), False
 
 
-async def download_file_as_bytes(bucket: str, s3_key: str) -> Tuple[Optional[BytesIO, None], bool]:
+async def download_file_as_bytes(bucket: str, s3_key: str) -> Tuple[Union[BytesIO, None], bool]:
     """
     Downloads a file from S3 and returns it as BytesIO object.
 

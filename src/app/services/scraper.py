@@ -1,7 +1,5 @@
 import asyncio
 import re
-import tempfile
-from collections import defaultdict
 from typing import List
 
 import aiofiles
@@ -10,48 +8,46 @@ from docx import Document
 from rapidfuzz import fuzz
 
 from src.app.typing.scraper import ScraperService, EmptyListOrListStr
-from src.app.aws.utils import download_file
 from src.settings.config import logger
+from src.app.services.responses import ServiceErrorResponse
 
 
 class FileScraperService:
     def __init__(self):
         self.keywords = []
 
-    async def file_processing(self, s3_key: str, bucket: str, keywords: List[str]) -> ScraperService:
+    async def file_processing(self, file_path: str, keywords: List[str]) -> ScraperService:
         """
         Process the file using the internal methods.
         First, download the file from the S3 bucket, after that extract text and then search for the keywords.
 
-        :param s3_key: Name of the file in the S3 bucket.
-        :param bucket: S3 bucket name.
+        :param file_path: Path to the file in the temporary directory.
         :param keywords: List of keywords to search in the file.
         :return: A tuple (`lust[str]`, `True`) if the process is successful.
                  A tuple (`str`, `False`) with an error message if the process fails.
         """
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            file_path = f"{tmpdir}/{s3_key}"
+        try:
             self.keywords = keywords
-
-            try:
-                message, is_downloaded = await download_file(bucket, s3_key, file_path)
-                if not is_downloaded:
-                    return message, False
-
-                if file_path.endswith(".txt"):
-                    return await self.search_in_txt(file_path), True
-                elif file_path.endswith(".docx"):
-                    return await self.search_in_docx(file_path), True
-                elif file_path.endswith(".pdf"):
-                    return await self.search_in_pdf(file_path), True
-
-            except Exception as e:
-                return str(e), False
-
-            return "Unsupported file type", False
+            if file_path.endswith(".txt"):
+                return await self.search_in_txt(file_path), True
+            elif file_path.endswith(".docx"):
+                return await self.search_in_docx(file_path), True
+            elif file_path.endswith(".pdf"):
+                return await self.search_in_pdf(file_path), True
+        except Exception as e:
+            logger.error(f"An internal error while scrapping: {str(e)}")
+            return ServiceErrorResponse.INTERNAL_ERROR, False
+        return ServiceErrorResponse.UNSUPPORTED_FILE_FORMAT, False
 
     async def search_in_txt(self, file_path: str) -> EmptyListOrListStr:
+        """
+        Read the text file and call the function to search for the keywords.
+
+        :param file_path: Input file path.
+        :return: Empty list if no matches found, otherwise list of sentences with the keywords.
+        """
+
         async with aiofiles.open(file=file_path, mode="r", encoding="utf-8") as file:
             logger.info("Reading file")
             result = await file.read()
@@ -59,10 +55,24 @@ class FileScraperService:
             return self.find_sentences_with_fuzzy_keywords(result)
 
     async def search_in_docx(self, file_path: str) -> EmptyListOrListStr:
+        """
+        Acts as an asynchronous shell for the synchronous _extract_docx function
+
+        :param file_path: Input file path.
+        :return: Empty list if no matches found, otherwise list of sentences with the keywords.
+        """
+
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._extract_docx, file_path)
 
     def _extract_docx(self, file_path: str) -> EmptyListOrListStr:
+        """
+        Read the text file and call the function to search for the keywords.
+
+        :param file_path: Input file path.
+        :return: Empty list if no matches found, otherwise list of sentences with the keywords.
+        """
+
         doc = Document(file_path)
         paragraphs = [para.text for para in doc.paragraphs if para.text.strip()]
 
@@ -75,6 +85,13 @@ class FileScraperService:
         return found_sentences
 
     async def search_in_pdf(self, file_path: str) -> EmptyListOrListStr:
+        """
+        Read the text file and call the function to search for the keywords.
+
+        :param file_path: Input file path.
+        :return: Empty list if no matches found, otherwise list of sentences with the keywords.
+        """
+
         doc = fitz.open(file_path)
 
         logger.info("Reading file")
@@ -88,6 +105,7 @@ class FileScraperService:
         return [sentence for result in results for sentence in result]
 
     def _sync_extract_page(self, page) -> str:
+        """Extract text from the page."""
         return page.get_text("text")
 
     def find_sentences_with_fuzzy_keywords(self, text: str, threshold: int = 80) -> EmptyListOrListStr:
@@ -119,21 +137,17 @@ class FileScraperService:
         clean_text = re.sub(r"\s*\n\s*", " ", text)
         sentences = re.split(r"(?<=[.!?])\s+", clean_text)
 
-        sentence_scores = defaultdict(int)
-
         logger.info("Start searching for keywords")
+
+        matched_sentences = []
         for sentence in sentences:
             words = sentence.lower().split()
-            match_count = sum(any(fuzz.ratio(word, keyword) >= threshold for word in words) for keyword in keywords)
+            if all(any(fuzz.ratio(word, keyword) >= threshold for word in words) for keyword in keywords):
+                matched_sentences.append(sentence)
 
-            if match_count > 0:
-                sentence_scores[sentence] = match_count
-
-        if not sentence_scores:
+        if not matched_sentences:
             logger.info("No matches found")
             return []
 
-        max_matches = max(sentence_scores.values())
-
         logger.info("File searching completed")
-        return [sent for sent, count in sentence_scores.items() if count == max_matches]
+        return matched_sentences

@@ -9,16 +9,17 @@ from botocore.exceptions import BotoCoreError, ClientError
 from src.app.aws.clients import s3_client
 from src.settings.config import logger
 from src.app.constants import CONTENT_TYPES
+from src.app.aws.responses import AWSErrorResponse, AWSSuccessResponse
 
 
-def sync_download_file_as_bytes(bucket: str, s3_key: str) -> Tuple[Union[BytesIO, None], bool]:
+def sync_download_file_as_bytes(bucket: str, s3_key: str) -> Tuple[Union[BytesIO, str], bool]:
     """
     Downloads a file from S3 and returns it as BytesIO object.
 
     :param bucket: S3 bucket name.
     :param s3_key: Destination file name in S3.
-    :return: A Tuple (`BytesIO`, True) if the download is successful.
-             A Tuple (None, False) if the download fails.
+    :return: A Tuple (`BytesIO`, `True`) if the download is successful.
+             A Tuple (`str`, `False`) if the download fails.
     """
 
     try:
@@ -27,7 +28,7 @@ def sync_download_file_as_bytes(bucket: str, s3_key: str) -> Tuple[Union[BytesIO
         return BytesIO(response["Body"].read()), True
     except (BotoCoreError, ClientError) as e:
         logger.error(f"Failed to download file from S3: {str(e)}")
-        return None, False
+        return AWSErrorResponse.ERROR_DOWNLOAD_FILE, False
 
 
 def sync_upload_bytes_to_s3(bucket: str, s3_key: str, file_bytes: BytesIO, file_format: str) -> Tuple[str, bool]:
@@ -47,11 +48,11 @@ def sync_upload_bytes_to_s3(bucket: str, s3_key: str, file_bytes: BytesIO, file_
         file_bytes.seek(0)
         s3_client.upload_fileobj(file_bytes, bucket, s3_key, ExtraArgs={"ContentType": content_type})
         logger.info(f"File {s3_key} uploaded to S3")
-        return "File uploaded", True
+        return AWSSuccessResponse.FILE_UPLOADED, True
 
     except (BotoCoreError, ClientError) as e:
         logger.error(f"Failed to upload file to S3: {str(e)}")
-        return "Upload error", False
+        return AWSErrorResponse.ERROR_UPLOAD_FILE, False
 
 
 def sync_download_file(bucket: str, s3_key: str, input_path: str) -> Tuple[str, bool]:
@@ -74,13 +75,13 @@ def sync_download_file(bucket: str, s3_key: str, input_path: str) -> Tuple[str, 
             return "Download failed: file is missing or empty", False
 
         logger.info("File has been downloaded")
-        return "File has been downloaded", True
+        return AWSSuccessResponse.FILE_DOWNLOADED, True
     except ClientError as error:
         logger.error(f"Client error: {error.response['Error']['Message']}")
-        return error.response["Error"]["Message"], False
+        return AWSErrorResponse.ERROR_DOWNLOAD_FILE, False
     except Exception as e:
         logger.error(f"An internal error occurred: {str(e)}")
-        return str(e), False
+        return AWSErrorResponse.ERROR_DOWNLOAD_FILE, False
 
 
 def sync_upload_file(file_path: str, bucket_name: str, key: str) -> Tuple[str, bool]:
@@ -100,17 +101,17 @@ def sync_upload_file(file_path: str, bucket_name: str, key: str) -> Tuple[str, b
         s3_client.upload_file(file_path, bucket_name, key)
         if not os.path.exists(file_path) and os.path.getsize(file_path) <= 0:
             logger.info("An error while uploading file")
-            return "An error while uploading file", False
+            return AWSErrorResponse.ERROR_UPLOAD_FILE, False
 
         logger.info("File has been uploaded to AWS S3")
-        return "Successfully uploaded", True
+        return AWSSuccessResponse.FILE_UPLOADED, True
 
     except Exception as e:
         logger.error(f"S3 upload error: {str(e)}")
-        return str(e), False
+        return AWSErrorResponse.ERROR_UPLOAD_FILE, False
 
 
-async def download_file_as_bytes(bucket: str, s3_key: str) -> Tuple[Union[BytesIO, None], bool]:
+async def download_file_as_bytes(bucket: str, s3_key: str) -> Tuple[Union[BytesIO, str], bool]:
     """
     Downloads a file from S3 and returns it as BytesIO object.
 

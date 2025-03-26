@@ -1,9 +1,11 @@
+from typing import Dict
+
 import httpx
 
 from src.settings.config import logger
 
 
-async def callback(callback_url: str, status: str, data: dict) -> dict:
+async def callback(callback_url: str, status: str, data: Dict) -> Dict:
     """
     Function to send the data to the external service.
     Response data is a dictionary with data on the result of the function work

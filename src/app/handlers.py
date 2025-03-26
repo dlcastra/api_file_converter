@@ -1,14 +1,16 @@
-from typing import Tuple, Dict
+import tempfile
+from typing import List
 
-from src.app.aws.utils import download_file_as_bytes, upload_bytes_to_s3
+from src.app.aws.utils import download_file_as_bytes, upload_bytes_to_s3, download_file
+from src.app.constants import CONTENT_TYPES
 from src.app.models.statuses import Status
 from src.app.services import get_file_scraper_service, get_file_converter_service
+from src.app.typing.converter import ConverterHandler
 from src.app.typing.scraper import ScraperHandler
 from src.settings.config import settings, logger
-from src.app.constants import CONTENT_TYPES
 
 
-async def convert_file(s3_key: str, old_format: str, format_to: str) -> Tuple[str, Dict]:
+async def convert_file(s3_key: str, old_format: str, format_to: str) -> ConverterHandler:
     """
     Function to convert the file as bytes from S3 bucket from one format to another.
     **Returns tuple with the str and the dict if the process was successful,
@@ -48,10 +50,10 @@ async def convert_file(s3_key: str, old_format: str, format_to: str) -> Tuple[st
         return Status.SUCCESS, {"file_url": file_url, "new_s3_key": converted_s3_key}
     except Exception as e:
         logger.error(f"An internal error occurred: {str(e)}")
-        return Status.ERROR, {"message": str(e)}
+        return Status.ERROR, {"message": "Internal error"}
 
 
-async def file_scraper(s3_key: str, keywords: list[str]) -> ScraperHandler:
+async def file_scraper(s3_key: str, keywords: List[str]) -> ScraperHandler:
     """
     Function to scrape the file from the S3 bucket.
     It searches the concrete sentence or a few sentences in the file be the list of keywords.
@@ -67,14 +69,21 @@ async def file_scraper(s3_key: str, keywords: list[str]) -> ScraperHandler:
     bucket = settings.AWS_S3_BUCKET_NAME
 
     try:
-        logger.error("File parsing has started")
-        details, is_processed = await scraper.file_processing(s3_key, bucket, keywords)
-        if not is_processed:
-            logger.error(f"File parsing failed. Details: {details}")
-            return Status.ERROR, {"message": details}
+        with tempfile.TemporaryDirectory() as tmpdir:
+            file_path = f"{tmpdir}/{s3_key}"
+
+            message, is_downloaded = await download_file(bucket, s3_key, file_path)
+            if not is_downloaded:
+                return Status.ERROR, {"message": message}
+
+            logger.info("File parsing has started")
+            details, is_processed = await scraper.file_processing(file_path, keywords)
+            if not is_processed:
+                logger.error(f"File parsing failed. Details: {details}")
+                return Status.ERROR, {"message": details}
 
         logger.info("File parsing successful")
         return Status.SUCCESS, {"count": len(details), "sentences": details}
     except Exception as e:
         logger.error(f"An internal error occurred: {str(e)}")
-        return Status.ERROR, {"message": str(e)}
+        return Status.ERROR, {"message": "Internal error"}

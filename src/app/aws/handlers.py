@@ -1,13 +1,14 @@
 import asyncio
 import json
-from typing import Optional
+from typing import Optional, Tuple, Union, Dict
 
 from src.app.handlers import convert_file, file_scraper
+from src.app.models.statuses import Status
 from src.app.utils import callback
 from src.settings.config import settings
 
 
-async def process_sqs_messages(sqs_client):
+async def process_sqs_messages(sqs_client) -> None:
     while True:
         response = sqs_client.receive_message(
             QueueUrl=settings.AWS_SQS_QUEUE_URL, MaxNumberOfMessages=10, WaitTimeSeconds=20, VisibilityTimeout=30
@@ -29,14 +30,15 @@ async def handle_message(sqs_client, message: dict) -> None:
         callback_url = message_body.get("callback_url")
 
         status, result = await process_message_body(message_body, s3_key)
-
+        status = Status.ERROR if status is None else status
+        result = {"message": "Missing a necessary argument"} if result is None else result
         await callback(callback_url, status=status, data=result)
 
     finally:
         await delete_sqs_message(sqs_client, message)
 
 
-async def process_message_body(message_body: dict, s3_key: Optional[str]):
+async def process_message_body(message_body: dict, s3_key: Optional[str]) -> Union[Tuple[str, Dict], Tuple[None, None]]:
     format_from, format_to = message_body.get("format_from"), message_body.get("format_to")
     keywords = message_body.get("keywords")
 

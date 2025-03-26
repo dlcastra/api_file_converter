@@ -1,4 +1,5 @@
-from typing import TypeAlias, Tuple
+from io import BytesIO
+from typing import Tuple, Dict, Union
 
-ConverterService: TypeAlias = Tuple[str, bool]
-ConverterHandler = Tuple[str, dict[str, str]]
+ConverterService = Tuple[Union[BytesIO, str], bool]
+ConverterHandler = Tuple[str, Dict[str, str]]

@@ -1,4 +1,5 @@
 import asyncio
+import threading
 
 from fastapi import FastAPI, APIRouter
 
@@ -29,4 +30,6 @@ async def validation_exception_handler(request, exc):
 
 @app.on_event("startup")
 async def startup_event():
-    await asyncio.create_task(process_sqs_messages(sqs_client))
+    thread = threading.Thread(target=asyncio.run, args=(process_sqs_messages(sqs_client),))
+    thread.daemon = True
+    thread.start()

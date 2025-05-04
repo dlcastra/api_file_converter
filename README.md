@@ -16,7 +16,6 @@ The following technologies were used to implement this API:
 - Docker
 - Docker Compose
 - AWS S3, SQS, IAM
-- Google Translate API
 
 ## How It Works
 

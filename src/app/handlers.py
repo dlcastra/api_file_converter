@@ -83,7 +83,7 @@ async def file_scraper(s3_key: str, keywords: List[str]) -> ScraperHandler:
                 return Status.ERROR, {"message": details}
 
         logger.info("File parsing successful")
-        return Status.SUCCESS, {"count": len(details), "sentences": details}
+        return Status.SUCCESS, {"s3_key": s3_key, "count": len(details), "sentences": details}
     except Exception as e:
         logger.error(f"An internal error occurred: {str(e)}")
         return Status.ERROR, {"message": "Internal error"}
